@@ -24,6 +24,7 @@ export interface Size {
   isAvailable: boolean;
 }
 
+// Sneaker model for Cart Page (minimal fields)
 export interface Sneaker {
   id: number;
   name: string;
@@ -45,7 +46,8 @@ export const transformSizeInfo = (sizeInfo: SizeInfo): Size => ({
   isAvailable: sizeInfo.stock > 0 && sizeInfo.status === 'available'
 });
 
-export const transformSneakerFromApi = (apiData: SneakerApiResponse): Sneaker => ({
+// Transform for Cart Page (excludes sku and category)
+export const transformSneakerForCart = (apiData: SneakerApiResponse): Sneaker => ({
   id: apiData.id,
   name: apiData.name,
   color: apiData.color,
@@ -54,6 +56,10 @@ export const transformSneakerFromApi = (apiData: SneakerApiResponse): Sneaker =>
   sizes: apiData.sizes.map(transformSizeInfo)
 });
 
-export const transformSneakersFromApi = (apiData: SneakerApiResponse[]): Sneaker[] => {
-  return apiData.map(transformSneakerFromApi);
+// Batch transform for Cart Page
+export const transformSneakersForCart = (apiData: SneakerApiResponse[]): Sneaker[] => {
+  return apiData.map(transformSneakerForCart);
 };
+// Deprecated: kept for backward compatibility
+export const transformSneakerFromApi = transformSneakerForCart;
+export const transformSneakersFromApi = transformSneakersForCart;

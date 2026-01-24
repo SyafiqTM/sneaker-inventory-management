@@ -1,251 +1,390 @@
 import { useState, useEffect } from "react";
 import {
-    Container,
-    Typography,
-    Paper,
-    Table,
-    TableHead,
-    TableBody,
-    TableRow,
-    TableCell,
-    TableContainer,
-    IconButton,
-    CircularProgress,
-    Alert,
-    Box,
-    Button,
+  Typography,
+  Paper,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  IconButton,
+  CircularProgress,
+  Alert,
+  Box,
+  Button,
+  Menu,
+  MenuItem,
+  LinearProgress,
+  TextField,
+  InputAdornment,
+  Snackbar,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import AddIcon from "@mui/icons-material/Add";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import SearchIcon from "@mui/icons-material/Search";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import Swal from 'sweetalert2';
 
-import { useNavigate } from "react-router-dom";
-import {
-    getAllItems,
-    createNewItem,
-    deleteItem,
-    searchItems,
-    getItemById,
-} from "../services/api";
-import ConfirmDialog from "./ConfirmDialog.jsx";
+import { getAllSneakers, deleteItem } from "../services/api";
+import { transformSneakersForInventory } from "../models/inventory";
 
-// Mock inventory data with CDN image URLs
-const mockupItems = [
-    {
-        id: 1,
-        name: "Nike Air Zoom Pegasus 40",
-        sku: "PEG-40-BLK-42",
-        size: 42,
-        quantity: 15,
-        price: 129.99,
-        imageUrl: "https://picsum.photos/seed/nike-pegasus-40/300/300",
-    },
-    {
-        id: 2,
-        name: "Nike Air Force 1",
-        sku: "AF1-WHT-43",
-        size: 43,
-        quantity: 8,
-        price: 119.99,
-        imageUrl: "https://picsum.photos/seed/nike-air-force-1/300/300",
-    },
-    {
-        id: 3,
-        name: "Nike Dunk Low Retro",
-        sku: "DUNK-LOW-RETRO-41",
-        size: 41,
-        quantity: 12,
-        price: 139.99,
-        imageUrl: "https://picsum.photos/seed/nike-dunk-low-retro/300/300",
-    },
-    {
-        id: 4,
-        name: "Nike Air Max 90",
-        sku: "AM90-GREY-44",
-        size: 44,
-        quantity: 6,
-        price: 149.99,
-        imageUrl: "https://picsum.photos/seed/nike-air-max-90/300/300",
-    },
-];
+function InventoryList({ onCreate, onEdit }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-function InventoryList() {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
+  // Fetch items on start component
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
-    const navigate = useNavigate();
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    // Fetch items on start component
-    useEffect(() => {
-        fetchItems();
-    }, []);
+      const data = await getAllSneakers();
 
-    const fetchItems = async () => {
-        try {
-            setLoading(true);
-            setError(null);
+      if (data.length === 0) {
+        setItems([]);
+        setError("No products available at the moment.");
+        return;
+      }
 
-            // Simulate API delay
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            // Load mock items
-            setItems(mockupItems);
-        } catch (err) {
-            setError("Failed to fetch items.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDeleteClick = (item) => {
-        setItemToDelete(item);
-        setDeleteDialogOpen(true);
-    };
-
-    // Confirm and execute delete
-    const handleDeleteConfirm = async () => {
-        try {
-            if (!itemToDelete) return;
-
-            // Remove the item locally from the mock data
-            setItems((prevItems) =>
-                prevItems.filter((item) => item.id !== itemToDelete.id),
-            );
-
-            //TODO: load deleteItem from API   
-            //await deleteItem(itemToDelete.id);
-
-
-            setDeleteDialogOpen(false);
-            setItemToDelete(null);
-
-            // Refresh the list
-            fetchItems();
-        } catch (err) {
-            setError("Failed to delete item. Please try again.");
-            console.error("Error deleting item:", err);
-            setDeleteDialogOpen(false);
-        }
-    };
-
-    const handleDeleteCancel = () => {
-        setDeleteDialogOpen(false);
-        setItemToDelete(null);
-    };
-
-    if (loading) {
-        return (
-            <Container sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                <CircularProgress />
-            </Container>
-        );
+      // Transform API response to domain models
+      const transformedData = transformSneakersForInventory(data);
+      setItems(transformedData);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch items:", err);
+      setError("Failed to fetch items.");
+    } finally {
+      setLoading(false);
     }
+  };
 
+  const handleDeleteClick = async (item) => {
+    const result = await Swal.fire({
+      title: 'Delete Item',
+      text: `Are you sure you want to delete "${item.name}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Call API to delete item
+        await deleteItem(item.id);
+
+        // Show success toast
+        setToastMessage("Item deleted successfully");
+        setToastOpen(true);
+
+        // Refresh the list
+        fetchItems();
+      } catch (err) {
+        console.error("Error deleting item:", err);
+        setError("Failed to delete item. Please try again.");
+      }
+    }
+  };
+
+  const handleMenuOpen = (event, item) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedItem(item);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedItem(null);
+  };
+
+  const handleUpdate = () => {
+    if (selectedItem && onEdit) {
+      onEdit(selectedItem.id);
+    }
+    handleMenuClose();
+  };
+
+  const handleDelete = () => {
+    if (selectedItem) {
+      handleDeleteClick(selectedItem);
+    }
+    handleMenuClose();
+  };
+
+  const getStockColor = (level) => {
+    switch (level) {
+      case "High":
+        return "#22c55e";
+      case "Low":
+        return "#ef4444";
+      case "Out":
+        return "#9ca3af";
+      default:
+        return "#3b82f6";
+    }
+  };
+
+  const getStockProgress = (level, stock) => {
+    if (level === "Out") return 0;
+    if (level === "Low") return 30;
+    return 80;
+  };
+
+  const calculateStockLevel = (sizes) => {
+    const totalStock = sizes.reduce((sum, size) => sum + size.stock, 0);
+    if (totalStock === 0) return "Out";
+    if (totalStock < 20) return "Low";
+    return "High";
+  };
+
+  const calculateTotalStock = (sizes) => {
+    return sizes.reduce((sum, size) => sum + size.stock, 0);
+  };
+
+  // Filter items based on search query
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
     return (
-        <Container sx={{ mt: 4 }}>
-            <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-            >
-                <Typography variant="h4" component="h1">
-                    Inventory List
-                </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate("/items/new")}
-                >
-                    Add Item
-                </Button>
-            </Box>
-
-            {/* Error message */}
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-                    {error}
-                </Alert>
-            )}
-
-            {/* Inventory table */}
-            {items.length > 0 && (
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Image</TableCell>
-                                <TableCell>Name</TableCell>
-                                <TableCell>SKU</TableCell>
-                                <TableCell>Size</TableCell>
-                                <TableCell align="right">Quantity</TableCell>
-                                <TableCell align="right">Price ($)</TableCell>
-                                <TableCell align="center">Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {items.map((item) => (
-                                <TableRow key={item.id} hover>
-                                    <TableCell>
-                                        <Box
-                                            component="img"
-                                            src={item.imageUrl}
-                                            alt={item.name}
-                                            loading="lazy"
-                                            sx={{
-                                                width: 64,
-                                                height: 64,
-                                                borderRadius: 1,
-                                                objectFit: "cover",
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell>{item.name}</TableCell>
-                                    <TableCell>{item.sku}</TableCell>
-                                    <TableCell>{item.size}</TableCell>
-                                    <TableCell align="right">{item.quantity}</TableCell>
-                                    <TableCell align="right">{item.price.toFixed(2)}</TableCell>
-                                    <TableCell align="center">
-                                        <IconButton
-                                            color="primary"
-                                            size="small"
-                                            onClick={() => navigate(`/items/${item.id}/edit`)}
-                                        >
-                                            <EditIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color="error"
-                                            size="small"
-                                            onClick={() => handleDeleteClick(item)}
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            )}
-
-            {/* Delete confirmation dialog */}
-            <ConfirmDialog
-                open={deleteDialogOpen}
-                title="Delete item"
-                content={
-                    itemToDelete
-                        ? `Are you sure you want to delete "${itemToDelete.name}"?`
-                        : "Are you sure you want to delete this item?"
-                }
-                onCancel={handleDeleteCancel}
-                onConfirm={handleDeleteConfirm}
-            />
-        </Container>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  return (
+    <Box>
+      {/* Header with Title */}
+      <Box display="flex" alignItems="center" gap={2} mb={3}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+          Inventory
+        </Typography>
+      </Box>
+
+      {/* Tabs and Controls */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+        sx={{ borderBottom: 1, borderColor: "#e5e7eb" }}
+      >
+        <Box display="flex" alignItems="center" gap={2}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              cursor: "pointer",
+            }}
+          >
+            <ViewModuleIcon sx={{ fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 600 }}>All product</Typography>
+          </Box>
+          <Box>
+            <Button
+              sx={{ textTransform: "none", color: "#6b7280" }}
+              onClick={onCreate}
+            >
+              + New Sneaker
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Search Input */}
+        <TextField
+          size="small"
+          placeholder="Search Products"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{
+            pb: 1,
+            width: 250,
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: "#f9fafb",
+              borderRadius: 2,
+            },
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: "#9ca3af" }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      {/* Error message */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Inventory table */}
+      {filteredItems.length > 0 && (
+        <TableContainer
+          component={Paper}
+          sx={{ boxShadow: "none", border: "1px solid #e5e7eb" }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: "#f9fafb" }}>
+                <TableCell sx={{ fontWeight: 600, color: "#6b7280" }}>
+                  Product name
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#6b7280" }}>
+                  SKU
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#6b7280" }}>
+                  Category
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#6b7280" }}>
+                  Current Stock
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "#6b7280" }}>
+                  Unit Price
+                </TableCell>
+                <TableCell
+                  sx={{ fontWeight: 600, color: "#6b7280" }}
+                ></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredItems.map((item) => {
+                const totalStock = calculateTotalStock(item.sizes);
+                const stockLevel = calculateStockLevel(item.sizes);
+
+                return (
+                  <TableRow
+                    key={item.id}
+                    hover
+                    sx={{ "&:hover": { backgroundColor: "#f9fafb" } }}
+                  >
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Box
+                          component="img"
+                          src={item.image}
+                          alt={item.name}
+                          loading="lazy"
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 1,
+                            objectFit: "cover",
+                          }}
+                        />
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {item.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.sku}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.category}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" sx={{ mb: 0.5 }}>
+                          {totalStock} unit  {stockLevel}
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={getStockProgress(stockLevel, totalStock)}
+                          sx={{
+                            height: 4,
+                            borderRadius: 2,
+                            backgroundColor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": {
+                              backgroundColor: getStockColor(stockLevel),
+                              borderRadius: 2,
+                            },
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        RM{item.price.toFixed(2)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleMenuOpen(e, item)}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {/* Actions Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleUpdate}>
+          <EditIcon sx={{ mr: 1, fontSize: 20 }} />
+          Update
+        </MenuItem>
+        <MenuItem onClick={handleDelete}>
+          <DeleteIcon sx={{ mr: 1, fontSize: 20, color: "#ef4444" }} />
+          <Typography sx={{ color: "#ef4444" }}>Delete</Typography>
+        </MenuItem>
+      </Menu>
+
+      {/* Success Toast */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={6000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setToastOpen(false)}
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {toastMessage}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
 }
 
 export default InventoryList;
+

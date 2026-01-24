@@ -78,6 +78,15 @@ export const UserProvider = ({ children }) => {
         localStorage.removeItem('inventory_user_name');
     };
 
+    // Listen for auth-required events from API interceptors
+    useEffect(() => {
+        const handleAuthRequired = () => {
+            logout();
+        };
+        window.addEventListener('auth-required', handleAuthRequired);
+        return () => window.removeEventListener('auth-required', handleAuthRequired);
+    }, []);
+
     return (
         <UserContext.Provider value={{ 
             userName, 

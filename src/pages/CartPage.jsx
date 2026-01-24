@@ -147,7 +147,7 @@ function CartPage() {
       <main className="cart-main">
         {/* Back Button */}
         <div className="back-button-container">
-          <button onClick={() => navigate('/inventory')} className="back-to-inventory-btn">
+          <button onClick={() => navigate('/')} className="back-to-inventory-btn">
             <ArrowLeft size={20} />
             Back to Inventory
           </button>

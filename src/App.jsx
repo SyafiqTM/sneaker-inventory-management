@@ -9,8 +9,9 @@ import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 import { UserProvider } from "./context/UserContext.jsx";
 import Navbar from "./components/Navbar.jsx";
 import LoginModal from "./components/LoginModal.jsx";
-import InventoryList from "./components/InventoryList.jsx";
-import AddItemPage from "./pages/AddItemPage.jsx";
+import InventoryPage from "./pages/InventoryPage.jsx";
+import AddSneakerPage from "./pages/AddSneakerPage.jsx";
+import UpdateSneakerPage from "./pages/UpdateSneakerPage.jsx";
 import CartPage from "./pages/Cartpage.jsx";
 
 const theme = createTheme({
@@ -33,10 +34,10 @@ function AppContent() {
     <>
       {showNavbar && <Navbar />}
       <Routes>
-        <Route path="/" element={<Navigate to="/cart" replace />} />
-        <Route path="/inventory" element={<InventoryList />} />
+        <Route path="/" element={<InventoryPage />} />
+        <Route path="/add" element={<AddSneakerPage />} />
+        <Route path="/edit/:id" element={<UpdateSneakerPage />} />
         <Route path="/cart" element={<CartPage />} />
-        <Route path="/add" element={<AddItemPage />} />
       </Routes>
     </>
   );
