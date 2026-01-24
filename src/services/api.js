@@ -1,11 +1,38 @@
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8000/api/v1.0/inventory/";
+const API_SNEAKERS_URL = "http://localhost:8000/api/v1.0/sneakers/";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
 });
+
+const apiClientSneakers = axios.create({
+  baseURL: API_SNEAKERS_URL,
+  timeout: 10000,
+});
+
+// Session management
+export const createSession = async (userName) => {
+  try {
+    const response = await apiClient.post("/session", { userName });
+    return response.data; // Expected: { sessionId, userName }
+  } catch (error) {
+    console.log("Error creating session:", error);
+    throw error;
+  }
+};
+
+export const validateSession = async (sessionId) => {
+  try {
+    const response = await apiClient.get(`/session/${sessionId}`);
+    return response.data; // Expected: { sessionId, userName, isValid }
+  } catch (error) {
+    console.log("Error validating session:", error);
+    throw error;
+  }
+};
 
 export const getAllItems = async () => {
   try {
@@ -66,6 +93,17 @@ export const searchItems = async (query) => {
         return response.data;
     } catch (error) {
         console.log("Error searching items:", error);
+        throw error;
+    }
+};
+
+// Sneakers API
+export const getAllSneakers = async () => {
+    try {
+        const response = await apiClientSneakers.get(`items`);
+        return response.data?.data || []; // API wraps array in data property
+    } catch (error) {
+        console.log("Error fetching sneakers:", error);
         throw error;
     }
 };
