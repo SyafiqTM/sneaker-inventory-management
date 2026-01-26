@@ -12,7 +12,7 @@ import LoginModal from "./components/LoginModal.jsx";
 import InventoryPage from "./pages/InventoryPage.jsx";
 import AddSneakerPage from "./pages/AddSneakerPage.jsx";
 import UpdateSneakerPage from "./pages/UpdateSneakerPage.jsx";
-import CartPage from "./pages/Cartpage.jsx";
+import CartPage from "./pages/CartPage.jsx";
 
 const theme = createTheme({
   palette: {
