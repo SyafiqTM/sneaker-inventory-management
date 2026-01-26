@@ -184,7 +184,7 @@ function CartPage() {
                   {product.color}
                 </p>
                 <p className="product-price">
-                  ${product.price.toFixed(2)}
+                  RM{product.price.toFixed(2)}
                 </p>
                 
                 <p className="size-label">
@@ -262,7 +262,7 @@ function CartPage() {
                         Size: {item.size}
                       </p>
                       <p className="cart-item-price">
-                        ${item.price.toFixed(2)}
+                        RM{item.price.toFixed(2)}
                       </p>
                       
                       <div className="cart-item-controls">
@@ -301,7 +301,7 @@ function CartPage() {
                 <div className="cart-subtotal">
                   <h3 className="cart-subtotal-label">Subtotal:</h3>
                   <p className="cart-subtotal-amount">
-                    ${subtotal.toFixed(2)}
+                    RM{subtotal.toFixed(2)}
                   </p>
                 </div>
                 
