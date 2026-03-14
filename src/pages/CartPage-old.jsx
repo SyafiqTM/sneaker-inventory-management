@@ -128,6 +128,21 @@ function CartPage() {
 
   return (
     <div className="cart-page-container">
+      {/* Header */}
+      <header className="cart-header">
+        <div className="cart-header-content">
+          <h1 className="cart-header-title">Sneaker Store</h1>
+          <button onClick={() => setCartOpen(true)} className="cart-icon-btn">
+            <ShoppingCart size={28} />
+            {totalItems > 0 && (
+              <span className="cart-badge">
+                {totalItems}
+              </span>
+            )}
+          </button>
+        </div>
+      </header>
+
       {/* Product Grid */}
       <main className="cart-main">
         {/* Back Button */}

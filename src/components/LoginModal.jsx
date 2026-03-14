@@ -1,16 +1,5 @@
 import { useState } from 'react';
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    Alert,
-    CircularProgress,
-    Box,
-    Typography
-} from '@mui/material';
+import { User } from 'lucide-react';
 import { useUser } from '../context/UserContext.jsx';
 
 const LoginModal = () => {
@@ -51,72 +40,58 @@ const LoginModal = () => {
     };
 
     // Don't show modal if already authenticated or context is loading
-    if (isAuthenticated || contextLoading) {
-        return null;
-    }
+    if (isAuthenticated || contextLoading) return null;
 
     return (
-        <Dialog 
-            open={!isAuthenticated} 
-            disableEscapeKeyDown
-            maxWidth="sm"
-            fullWidth
-        >
-            <DialogTitle>
-                <Typography variant="h5" component="div">
-                    Welcome to Inventory Manager
-                </Typography>
-            </DialogTitle>
-            <DialogContent>
-                <Box sx={{ mt: 2 }}>
-                    <Typography variant="body1" sx={{ mb: 3 }}>
-                        Please enter your name to continue:
-                    </Typography>
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Alert>
-                    )}
-                    <TextField
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 backdrop-blur-sm">
+            <div className="bg-background w-full max-w-sm mx-4 p-8 shadow-2xl">
+                <div className="flex items-center justify-center w-12 h-12 bg-primary text-primary-foreground mb-6">
+                    <User className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-1">Welcome</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                    Enter your name to access the inventory manager.
+                </p>
+
+                {error && (
+                    <div className="p-3 mb-4 bg-red-50 border border-red-200 text-red-700 text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
+                        Your Name
+                    </label>
+                    <input
                         autoFocus
-                        label="Your Name"
-                        fullWidth
-                        variant="outlined"
+                        type="text"
                         value={userName}
                         onChange={(e) => {
                             const value = e.target.value;
-                            // Only allow letters and spaces
                             if (value === '' || /^[a-zA-Z\s]*$/.test(value)) {
                                 setUserName(value);
                                 setError('');
                             }
                         }}
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                                handleSubmit(e);
-                            }
-                        }}
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
                         disabled={loading}
                         placeholder="Enter your full name"
-                        inputProps={{ maxLength: 25 }}
-                        helperText={`${userName.length}/25 characters`}
-                        error={userName.length > 25}
+                        maxLength={25}
+                        className="w-full px-3 py-2.5 text-sm border border-border bg-card focus:outline-none focus:ring-1 focus:ring-foreground mb-1"
                     />
-                </Box>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    disabled={loading || !userName.trim()}
-                    startIcon={loading && <CircularProgress size={20} />}
-                >
-                    {loading ? 'Connecting...' : 'Continue'}
-                </Button>
-            </DialogActions>
-        </Dialog>
+                    <p className="text-xs text-muted-foreground mb-6">{userName.length}/25 characters</p>
+
+                    <button
+                        type="submit"
+                        disabled={loading || !userName.trim()}
+                        className="w-full bg-primary text-primary-foreground py-3 font-bold uppercase text-sm tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                        {loading ? 'Connecting...' : 'Continue'}
+                    </button>
+                </form>
+            </div>
+        </div>
     );
 };
 

@@ -1,14 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Divider,
-  MenuItem,
-  Paper,
-  TextField,
-  Typography,
-  CircularProgress,
-} from "@mui/material";
+import { AlertCircle } from "lucide-react";
 import { validateSneakerForm } from "../utils/validation";
 import { createNewItem, getSneakerById, updateItem } from "../services/api";
 
@@ -16,7 +7,6 @@ const CATEGORY_OPTIONS = ["Casual", "Training", "Running"];
 const DEFAULT_SIZES = [36, 37, 38, 39, 40, 41, 42, 43];
 
 function ItemPage({ onCancel, onSubmitSuccess, itemId = null, isEditMode = false }) {
-  // Check for prefill query parameter
   const urlParams = new URLSearchParams(window.location.search);
   const shouldPrefill = urlParams.get("prefill") === "true";
 
@@ -27,14 +17,13 @@ function ItemPage({ onCancel, onSubmitSuccess, itemId = null, isEditMode = false
   const [image, setImage] = useState("");
   const [color, setColor] = useState("");
   const [sizes, setSizes] = useState(
-    DEFAULT_SIZES.map((size) => ({ size, stock: "" })),
+    DEFAULT_SIZES.map((size) => ({ size, stock: "" }))
   );
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fetchLoading, setFetchLoading] = useState(false);
 
-  // Fetch existing sneaker data when in edit mode
   useEffect(() => {
     const fetchSneakerData = async () => {
       if (isEditMode && itemId) {
@@ -47,14 +36,14 @@ function ItemPage({ onCancel, onSubmitSuccess, itemId = null, isEditMode = false
           setPrice(data.price?.toString() || "");
           setImage(data.image || "");
           setColor(data.color || "");
-          
-          // Map sizes from API data
           if (data.sizes && Array.isArray(data.sizes)) {
-            const sizeMap = new Map(data.sizes.map(s => [s.size, s.stock]));
-            setSizes(DEFAULT_SIZES.map((size) => ({
-              size,
-              stock: sizeMap.has(size) ? sizeMap.get(size).toString() : ""
-            })));
+            const sizeMap = new Map(data.sizes.map((s) => [s.size, s.stock]));
+            setSizes(
+              DEFAULT_SIZES.map((size) => ({
+                size,
+                stock: sizeMap.has(size) ? sizeMap.get(size).toString() : "",
+              }))
+            );
           }
         } catch (error) {
           console.error("Error fetching sneaker data:", error);
@@ -64,11 +53,9 @@ function ItemPage({ onCancel, onSubmitSuccess, itemId = null, isEditMode = false
         }
       }
     };
-
     fetchSneakerData();
   }, [isEditMode, itemId]);
 
-  // Prefill form when shouldPrefill is true
   useEffect(() => {
     if (shouldPrefill && !isEditMode) {
       setName("Nike Air Max 90 Premium");
@@ -91,27 +78,14 @@ function ItemPage({ onCancel, onSubmitSuccess, itemId = null, isEditMode = false
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    const formData = {
-      name,
-      sku,
-      category,
-      price,
-      image,
-      color,
-      sizes,
-    };
-
+    const formData = { name, sku, category, price, image, color, sizes };
     const validationErrors = validateSneakerForm(formData);
-    
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
     setErrors({});
     setSubmitError("");
-
     const payload = {
       name: name.trim(),
       sku: sku.trim(),
@@ -123,357 +97,200 @@ function ItemPage({ onCancel, onSubmitSuccess, itemId = null, isEditMode = false
         .filter((s) => s.size !== "" && s.stock !== "")
         .map((s) => ({ size: Number(s.size), stock: Number(s.stock) })),
     };
-
     try {
       setLoading(true);
-      let response;
-      
       if (isEditMode && itemId) {
-        response = await updateItem(itemId, payload);
-        console.log("Sneaker updated successfully:", response);
+        await updateItem(itemId, payload);
       } else {
-        response = await createNewItem(payload);
-        console.log("Sneaker created successfully:", response);
+        await createNewItem(payload);
       }
-      
-      if (onSubmitSuccess) {
-        onSubmitSuccess();
-      }
+      if (onSubmitSuccess) onSubmitSuccess();
     } catch (error) {
-      console.error(`Error ${isEditMode ? 'updating' : 'creating'} sneaker:`, error);
+      console.error(`Error ${isEditMode ? "updating" : "creating"} sneaker:`, error);
       setSubmitError(
-        error.response?.data?.message || 
-        `Failed to ${isEditMode ? 'update' : 'create'} sneaker. Please try again.`
+        error.response?.data?.message ||
+          `Failed to ${isEditMode ? "update" : "create"} sneaker. Please try again.`
       );
     } finally {
       setLoading(false);
     }
   };
 
+  const inputCls =
+    "w-full px-3 py-2.5 text-sm border border-border bg-card focus:outline-none focus:ring-1 focus:ring-foreground transition-all";
+  const labelCls = "block text-xs font-bold uppercase tracking-wider mb-1.5";
+  const errCls = "text-xs text-red-500 mt-1";
+
+  if (fetchLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <Paper 
-      sx={{ 
-        p: 4, 
-        borderRadius: 2,
-        border: "1px solid #e5e7eb",
-        boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)"
-      }} 
-      elevation={0}
-    >
-      {fetchLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
+    <div className="border border-border p-6 bg-background">
       <form onSubmit={handleSubmit}>
-        {/* Error Message */}
         {submitError && (
-          <Box 
-            sx={{ 
-              mb: 3, 
-              p: 2, 
-              backgroundColor: "#fee2e2",
-              border: "1px solid #fca5a5",
-              borderRadius: 1,
-              color: "#991b1b"
-            }}
-          >
-            <Typography variant="body2">
-              {submitError}
-            </Typography>
-          </Box>
+          <div className="flex items-center gap-2 p-3 mb-6 bg-red-50 border border-red-200 text-red-700 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {submitError}
+          </div>
         )}
 
-        {/* General Information Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              mb: 3, 
-              fontWeight: 600,
-              color: "#111827"
-            }}
-          >
+        {/* General Information */}
+        <div className="mb-8">
+          <h2 className="text-base font-bold uppercase tracking-wider mb-6">
             General Information
-          </Typography>
+          </h2>
 
-          {/* Product Name */}
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              label="Product Name"
-              fullWidth
-              required
+          <div className="mb-4">
+            <label className={labelCls}>Product Name</label>
+            <input
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Nike Air Max 90"
-              error={!!errors.name}
-              helperText={errors.name}
-              inputProps={{ maxLength: 255 }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fafafa",
-                }
-              }}
+              maxLength={255}
+              className={inputCls}
             />
-          </Box>
+            {errors.name && <p className={errCls}>{errors.name}</p>}
+          </div>
 
-          {/* SKU and Category Row */}
-          <Box sx={{ 
-            display: "flex", 
-            gap: 2, 
-            mb: 3,
-            flexWrap: "wrap"
-          }}>
-            <TextField
-              label="SKU"
-              required
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-              placeholder="e.g., NK-AM90-BLK"
-              error={!!errors.sku}
-              helperText={errors.sku}
-              inputProps={{ maxLength: 50 }}
-              disabled={isEditMode}
-              sx={{ 
-                flex: "1 1 250px",
-                minWidth: "250px",
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fafafa",
-                }
-              }}
-            />
-            <TextField
-              select
-              required
-              label="Category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              error={!!errors.category}
-              helperText={errors.category}
-              sx={{ 
-                flex: "1 1 250px",
-                minWidth: "250px",
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fafafa",
-                }
-              }}
-            >
-              {CATEGORY_OPTIONS.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className={labelCls}>SKU</label>
+              <input
+                type="text"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                placeholder="e.g., NK-AM90-BLK"
+                maxLength={50}
+                disabled={isEditMode}
+                className={`${inputCls} ${isEditMode ? "opacity-50 cursor-not-allowed" : ""}`}
+              />
+              {errors.sku && <p className={errCls}>{errors.sku}</p>}
+            </div>
+            <div>
+              <label className={labelCls}>Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={inputCls}
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              {errors.category && <p className={errCls}>{errors.category}</p>}
+            </div>
+          </div>
 
-          {/* Image Path and Color Row */}
-          <Box sx={{ 
-            display: "flex", 
-            gap: 2, 
-            mb: 3,
-            flexWrap: "wrap"
-          }}>
-            <TextField
-              label="Image Path"
-              required
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="e.g., /images/sneakers/air-max-90.jpg"
-              error={!!errors.image}
-              helperText={errors.image}
-              sx={{ 
-                flex: "1 1 250px",
-                minWidth: "250px",
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fafafa",
-                }
-              }}
-            />
-            <TextField
-              label="Color"
-              required
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              placeholder="e.g., Black/White"
-              error={!!errors.color}
-              helperText={errors.color}
-              sx={{ 
-                flex: "1 1 250px",
-                minWidth: "250px",
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fafafa",
-                }
-              }}
-            />
-          </Box>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className={labelCls}>Image URL</label>
+              <input
+                type="text"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
+                placeholder="https://..."
+                className={inputCls}
+              />
+              {errors.image && <p className={errCls}>{errors.image}</p>}
+            </div>
+            <div>
+              <label className={labelCls}>Color</label>
+              <input
+                type="text"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="e.g., Black/White"
+                className={inputCls}
+              />
+              {errors.color && <p className={errCls}>{errors.color}</p>}
+            </div>
+          </div>
 
-          {/* Price */}
-          <Box sx={{ maxWidth: "300px" }}>
-            <TextField
-              label="Sale Price"
-              fullWidth
-              required
+          <div className="max-w-xs">
+            <label className={labelCls}>Sale Price (RM)</label>
+            <input
               type="number"
-              inputProps={{ min: 0, max: 99999, step: "0.01" }}
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="0.00"
-              error={!!errors.price}
-              helperText={errors.price}
-              InputProps={{
-                startAdornment: (
-                  <Typography sx={{ mr: 1, color: "#6b7280", fontWeight: 500 }}>
-                    RM
-                  </Typography>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "#fafafa",
-                }
-              }}
+              min={0}
+              max={99999}
+              step="0.01"
+              className={inputCls}
             />
-          </Box>
-        </Box>
+            {errors.price && <p className={errCls}>{errors.price}</p>}
+          </div>
+        </div>
 
-        <Divider sx={{ mb: 4 }} />
+        <hr className="border-border mb-8" />
 
-        {/* Sizes & Stock Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              mb: 1, 
-              fontWeight: 600,
-              color: "#111827"
-            }}
-          >
+        {/* Sizes & Stock */}
+        <div className="mb-8">
+          <h2 className="text-base font-bold uppercase tracking-wider mb-1">
             Sizes & Stock
-          </Typography>
-          <Typography 
-            variant="body2" 
-            color="text.secondary" 
-            sx={{ mb: 3 }}
-          >
+          </h2>
+          <p className="text-xs text-muted-foreground mb-5">
             Set the available EU sizes and quantity for each size.
-          </Typography>
+          </p>
+          {errors.sizes && <p className={`${errCls} mb-3`}>{errors.sizes}</p>}
 
-          {errors.sizes && (
-            <Typography 
-              variant="body2" 
-              color="error" 
-              sx={{ mb: 2 }}
-            >
-              {errors.sizes}
-            </Typography>
-          )}
-
-          {/* Size Grid - 4 columns */}
-          <Box 
-            sx={{ 
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: 2,
-              mb: 2
-            }}
-          >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {sizes.map((row, index) => (
-              <Box
+              <div
                 key={index}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  p: 2,
-                  backgroundColor: "#f9fafb",
-                  borderRadius: 2,
-                  border: "1px solid #e5e7eb",
-                }}
+                className="flex items-center gap-2 p-3 bg-card border border-border"
               >
-                <Box sx={{ 
-                  minWidth: "50px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center"
-                }}>
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      color: "#6b7280",
-                      fontSize: "0.7rem",
-                      mb: 0.5
-                    }}
-                  >
+                <div className="text-center min-w-[40px]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     SIZE
-                  </Typography>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: "#111827"
-                    }}
-                  >
-                    {row.size}
-                  </Typography>
-                </Box>
-                <TextField
-                  label="Stock"
+                  </p>
+                  <p className="text-lg font-bold">{row.size}</p>
+                </div>
+                <input
                   type="number"
-                  size="small"
                   value={row.stock}
                   onChange={(e) => handleSizeChange(index, "stock", e.target.value)}
                   placeholder="0"
-                  inputProps={{ min: 0, max: 9999 }}
-                  error={!!errors.sizeErrors?.[index]}
-                  helperText={errors.sizeErrors?.[index]}
-                  ></TextField>
-              </Box>
+                  min={0}
+                  max={9999}
+                  className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-border bg-background focus:outline-none focus:ring-1 focus:ring-foreground"
+                />
+                {errors.sizeErrors?.[index] && (
+                  <p className={errCls}>{errors.sizeErrors[index]}</p>
+                )}
+              </div>
             ))}
-          </Box>
-          {/* Action Buttons */}
-        <Box 
-          sx={{ 
-            display: "flex", 
-            justifyContent: "flex-end", 
-            gap: 2,
-            pt: 2,
-            borderTop: "1px solid #e5e7eb"
-          }}
-        >
-          <Button 
-            variant="outlined" 
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <button
+            type="button"
             onClick={onCancel}
             disabled={loading}
-            sx={{
-              borderColor: "#d1d5db",
-              color: "#6b7280",
-              "&:hover": {
-                borderColor: "#9ca3af",
-                backgroundColor: "#f9fafb"
-              }
-            }}
+            className="px-6 py-2.5 text-sm font-bold uppercase tracking-wider border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-all disabled:opacity-50"
           >
             Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            variant="contained"
+          </button>
+          <button
+            type="submit"
             disabled={loading}
-            sx={{
-              backgroundColor: "#1976d2",
-              "&:hover": {
-                backgroundColor: "#1565c0"
-              },
-              px: 4
-            }}
+            className="px-6 py-2.5 text-sm font-bold uppercase tracking-wider bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? "Saving..." : (isEditMode ? "Update Sneaker" : "Save Sneaker")}
-          </Button>
-        </Box>
-        </Box>
+            {loading ? "Saving..." : isEditMode ? "Update Sneaker" : "Save Sneaker"}
+          </button>
+        </div>
       </form>
-      )}
-    </Paper>
+    </div>
   );
 }
 
